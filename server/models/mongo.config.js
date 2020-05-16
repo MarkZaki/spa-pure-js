@@ -11,6 +11,8 @@ if (!mongodbUrl) {
   return;
 }
 
+mongoose.set("useFindAndModify", false);
+
 mongoose.connect(mongodbUrl, {
   useNewUrlParser: true,
   useUnifiedTopology: true,

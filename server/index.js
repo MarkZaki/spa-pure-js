@@ -24,7 +24,6 @@ app.get("/", (req, res) =>
 const upload = multer();
 
 app.post("/video-request", upload.none(), async (req, res, next) => {
-  console.log(req.body);
   const response = await VideoRequestData.createRequest(req.body);
   res.send(response);
   next();
@@ -53,7 +52,7 @@ app.use(express.json());
 app.put("/video-request/vote", async (req, res, next) => {
   const { id, vote_type } = req.body;
   const response = await VideoRequestData.updateVoteForRequest(id, vote_type);
-  res.send(response);
+  res.send(response.votes);
   next();
 });
 
