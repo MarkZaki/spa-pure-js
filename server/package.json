@@ -1,14 +1,15 @@
 {
   "name": "video-requests-api",
   "version": "1.0.0",
-  "author": "Medhat Dawoud <@med7atdawoud>",
+  "author": "Mark Zaky <@MarkZaki>",
   "dependencies": {
     "bluebird": "^3.7.2",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongoose": "^5.9.9"
+    "mongoose": "^5.9.9",
+    "multer": "^1.4.2"
   },
   "engines": {
     "node": "^10.16.3",

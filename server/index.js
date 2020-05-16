@@ -8,18 +8,23 @@ const VideoRequestData = require("./data/video-requests.data");
 const UserData = require("./data/user.data");
 const cors = require("cors");
 const mongoose = require("./models/mongo.config");
+const multer = require("multer");
 
 if (!Object.keys(mongoose).length) return;
 
 app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 app.get("/", (req, res) =>
   res.send("Welcome to my awesome API, use /video-request to get data")
 );
 
-app.post("/video-request", async (req, res, next) => {
+const upload = multer();
+
+app.post("/video-request", upload.none(), async (req, res, next) => {
+  console.log(req.body);
   const response = await VideoRequestData.createRequest(req.body);
   res.send(response);
   next();

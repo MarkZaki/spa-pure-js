@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 mongoose.Promise = require("bluebird");
 
-const mongodbUrl = process.env.DB_CONNECT; // TODO: PUT YOUR VALID MONGODB CONNECTION URL HERE <-
+const mongodbUrl = process.env.DB_CONNECT; // TODO: PUT YOUR VALID MONGODB CONNECTION URL HERE OR ADD IT IN .ENV FILE <-
 
 if (!mongodbUrl) {
   console.log(
