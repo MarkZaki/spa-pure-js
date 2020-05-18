@@ -92,6 +92,18 @@
       </div>
       <hr />
       <h1 class="mb-4">List of requested videos</h1>
+      <div class="d-flex justify-content-between mb-4">
+        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+          <label class="btn btn-primary active" id="sort_by_new">
+            <input type="radio" name="options" value="newFirst" />
+            Newest First
+          </label>
+          <label class="btn btn-primary" id="sort_by_vote">
+            <input type="radio" name="options" value="topVotedFirst" />
+            Top Voted First
+          </label>
+        </div>
+      </div>
       <div id="listOfRequests"></div>
     </div>
     <script src="./app.js"></script>
