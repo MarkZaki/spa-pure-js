@@ -1,24 +1,36 @@
 const server = "http://localhost:5000";
 
+let sortBy = "newFirst";
+let searchTerm = "";
+
 document.addEventListener("DOMContentLoaded", function () {
   const formVideoRequestElm = document.getElementById("formVideoRequest");
   const sortByElms = document.querySelectorAll("[id*=sort_by_]");
+  const searchBoxElm = document.getElementById("search_box");
 
-  loadAllVidReqs();
+  loadAllVidReqs(sortBy, searchTerm);
 
   sortByElms.forEach((elm) => {
     elm.addEventListener("click", function (e) {
       e.preventDefault();
-      const sortBy = this.querySelector("input");
-      loadAllVidReqs(sortBy.value);
+      sortBy = this.querySelector("input").value;
+      loadAllVidReqs(sortBy, searchTerm);
       this.classList.add("active");
-      if (sortBy.value === "topVotedFirst") {
+      if (sortBy === "topVotedFirst") {
         document.getElementById("sort_by_new").classList.remove("active");
       } else {
         document.getElementById("sort_by_vote").classList.remove("active");
       }
     });
   });
+
+  searchBoxElm.addEventListener(
+    "input",
+    debounce((e) => {
+      searchTerm = e.target.value;
+      loadAllVidReqs(sortBy, searchTerm);
+    }, 300)
+  );
 
   formVideoRequestElm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -125,9 +137,11 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
   });
 }
 
-function loadAllVidReqs(sortBy = "newFirst") {
+function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
   const listOfVidElm = document.getElementById("listOfRequests");
-  return fetch(`${server}/video-request?sortBy=${sortBy}`)
+  return fetch(
+    `${server}/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`
+  )
     .then((blob) => blob.json())
     .then((data) => {
       listOfVidElm.innerHTML = "";
@@ -135,4 +149,14 @@ function loadAllVidReqs(sortBy = "newFirst") {
         getSingleVidReq(vidInfo);
       });
     });
+}
+
+function debounce(fn, time) {
+  let timeout;
+
+  return function () {
+    const functionCall = () => fn.apply(this, arguments);
+    clearTimeout(timeout);
+    timeout = setTimeout(functionCall, time);
+  };
 }
