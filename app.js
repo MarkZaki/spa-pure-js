@@ -1,22 +1,43 @@
 const server = "http://localhost:5000";
 
-let sortBy = "newFirst";
-let searchTerm = "";
+const state = {
+  userID: "",
+  sortBy: "newFirst",
+  searchTerm: "",
+};
 
 document.addEventListener("DOMContentLoaded", function () {
   const formVideoRequestElm = document.getElementById("formVideoRequest");
+  const formLoginElm = document.getElementById("formLogin");
   const sortByElms = document.querySelectorAll("[id*=sort_by_]");
   const searchBoxElm = document.getElementById("search_box");
+  const appContent = document.querySelector(".app-content");
 
-  loadAllVidReqs(sortBy, searchTerm);
+  loadAllVidReqs(state.sortBy, state.searchTerm);
+
+  const loginData = new FormData(formLoginElm);
+
+  formLoginElm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    fetch(`${server}/users/login`, {
+      method: "POST",
+      body: loginData,
+    })
+      .then((bold) => bold.json())
+      .then((data) => {
+        state.userID = data.id;
+        formLoginElm.classList.add("d-none");
+        appContent.classList.remove("d-none");
+      });
+  });
 
   sortByElms.forEach((elm) => {
     elm.addEventListener("click", function (e) {
       e.preventDefault();
-      sortBy = this.querySelector("input").value;
-      loadAllVidReqs(sortBy, searchTerm);
+      state.sortBy = this.querySelector("input").value;
+      loadAllVidReqs(state.sortBy, state.searchTerm);
       this.classList.add("active");
-      if (sortBy === "topVotedFirst") {
+      if (state.sortBy === "topVotedFirst") {
         document.getElementById("sort_by_new").classList.remove("active");
       } else {
         document.getElementById("sort_by_vote").classList.remove("active");
@@ -27,8 +48,8 @@ document.addEventListener("DOMContentLoaded", function () {
   searchBoxElm.addEventListener(
     "input",
     debounce((e) => {
-      searchTerm = e.target.value;
-      loadAllVidReqs(sortBy, searchTerm);
+      state.searchTerm = e.target.value;
+      loadAllVidReqs(state.sortBy, state.searchTerm);
     }, 300)
   );
 
@@ -36,6 +57,8 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
 
     const formData = new FormData(formVideoRequestElm);
+
+    formData.append("author_id", state.userID);
 
     const isValid = validateForm(formData);
 
@@ -50,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function () {
     formVideoRequestElm.reset();
   });
 });
-
 function getSingleVidReq(vidInfo, isPrepend = false) {
   const level_color = vidInfo.target_level;
   let bgColor = "success";
@@ -166,19 +188,8 @@ function debounce(fn, time) {
 }
 
 function validateForm(formData) {
-  const name = formData.get("author_name");
-  const email = formData.get("author_email");
   const topic = formData.get("topic_title");
   const topicDetails = formData.get("topic_details");
-
-  if (!name) {
-    document.querySelector("[name=author_name]").classList.add("is-invalid");
-  }
-
-  const emailPattern = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  if (!email || !emailPattern.test(email)) {
-    document.querySelector("[name=author_email]").classList.add("is-invalid");
-  }
 
   if (!topic || topic.length > 30) {
     document.querySelector("[name=topic_title]").classList.add("is-invalid");
