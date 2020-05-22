@@ -19,6 +19,7 @@ const state = {
   searchTerm: "",
   author_name: "",
   author_email: "",
+  isAdmin: false,
 };
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -28,19 +29,29 @@ document.addEventListener("DOMContentLoaded", function () {
   const searchBoxElm = document.getElementById("search_box");
   const appContent = document.querySelector(".app-content");
 
-  const loginData = new FormData(formLoginElm);
-
   formLoginElm.addEventListener("submit", (e) => {
     e.preventDefault();
+    const loginData = {
+      author_name: formLoginElm["author_name"].value,
+      author_email: formLoginElm["author_email"].value,
+    };
+    console.log(loginData);
     fetch(`${server}/users/login`, {
       method: "POST",
-      body: loginData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(loginData),
     })
       .then((bold) => bold.json())
       .then((data) => {
         state.userID.a = data.id;
         state.author_name = data.author_name;
         state.author_email = data.author_email;
+        if (data.admin) {
+          state.isAdmin = true;
+          document
+            .getElementById("normal-user-content")
+            .classList.add("d-none");
+        }
         formLoginElm.classList.add("d-none");
         appContent.classList.remove("d-none");
       });
@@ -110,7 +121,24 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
       bgColor = "success";
   }
   const vidTemplate = `
-    <div class="card mb-3">
+    <div class="card mb-3" id="id_${vidInfo._id}_id">
+    ${
+      state.isAdmin &&
+      `<div class="card-header d-flex justify-content-between">
+    <select id="admin_change_status_${vidInfo._id}" value=${vidInfo.status}>
+      <option value="new">new</option>
+      <option value="planned">planned</option>
+      <option value="done">done</option>
+    </select>
+    <div class="input-group ml-2 mr-5 d-none" id="input_video_req_container_${vidInfo._id}">
+        <input type="text" placeholder="Youtube link here..." class="form-control" id="admin_video_res_${vidInfo._id}">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="button" id="admin_save_video_res_${vidInfo._id}">save</button>
+        </div>
+    </div>
+    <button class="btn btn-danger" id="admin_delete_video_req_${vidInfo._id}">Delete</button>
+</div>`
+    }
       <div class="card-body d-flex justify-content-between flex-row">
         <div class="d-flex flex-column">
           <h3>${vidInfo.topic_title}</h3>
@@ -132,7 +160,9 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
       </div>
       <div class="card-footer d-flex flex-row justify-content-between">
         <div>
-          <span class="text-info">${vidInfo.status.toUpperCase()}</span>
+          <span class="text-info" id="vid_req_status_${
+            vidInfo._id
+          }">${vidInfo.status.toUpperCase()}</span>
           &bullet; added by <strong>${vidInfo.author_name}</strong> on
           <strong>${new Date(vidInfo.submit_date).toLocaleDateString()}</strong>
         </div>
@@ -154,6 +184,83 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
     listOfVidElm.append(vidReqContainerElm);
   }
 
+  if (state.isAdmin) {
+    const adminChangeStatusElm = document.getElementById(
+      `admin_change_status_${vidInfo._id}`
+    );
+    const adminVideoResElm = document.getElementById(
+      `admin_video_res_${vidInfo._id}`
+    );
+    const adminSaveVideoResElm = document.getElementById(
+      `admin_save_video_res_${vidInfo._id}`
+    );
+    const adminDeleteVideoReqElm = document.getElementById(
+      `admin_delete_video_req_${vidInfo._id}`
+    );
+    const adminVideoResContainer = document.getElementById(
+      `input_video_req_container_${vidInfo._id}`
+    );
+    adminChangeStatusElm.querySelectorAll("option").forEach((option) => {
+      if (option.value === vidInfo.status) {
+        if (option.value === "done") {
+          adminVideoResContainer.classList.remove("d-none");
+        } else {
+          adminVideoResContainer.classList.add("d-none");
+        }
+        option.selected = true;
+        adminVideoResElm.value = vidInfo.video_ref.link;
+      }
+    });
+
+    adminChangeStatusElm.addEventListener("change", (e) => {
+      if (e.target.value === "done") {
+        adminVideoResContainer.classList.remove("d-none");
+        document.getElementById(
+          `vid_req_status_${vidInfo._id}`
+        ).innerText = e.target.value.toUpperCase();
+      } else {
+        adminVideoResContainer.classList.add("d-none");
+        // TODO: FETCH FUNCTION
+        updateStatus(vidInfo._id, e.target.value);
+      }
+    });
+
+    adminSaveVideoResElm.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!adminVideoResElm.value) {
+        adminVideoResElm.classList.add("is-invalid");
+        adminVideoResElm.addEventListener("input", function () {
+          this.classList.remove("is-invalid");
+        });
+        return;
+      }
+      // TODO: FETCH FUNCTION
+      updateStatus(vidInfo._id, "done", adminVideoResElm.value);
+    });
+
+    adminDeleteVideoReqElm.addEventListener("click", (e) => {
+      const isSure = confirm(
+        `Are You Sure you want to delete "${vidInfo.topic_title}"?`
+      );
+
+      if (!isSure) {
+        return;
+      }
+
+      e.preventDefault();
+      fetch(`${server}/video-request`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: vidInfo._id }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const deletedElm = document.getElementById(`id_${vidInfo._id}_id`);
+          deletedElm.remove();
+        });
+    });
+  }
+
   style_votes(vidInfo.votes, vidInfo._id);
 
   const voteScoreElm = document.getElementById(`score_vote_${vidInfo._id}`);
@@ -162,6 +269,15 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
   );
 
   votesElms.forEach((elm) => {
+    if (state.isAdmin) {
+      const voteUpsElm = document.getElementById(`votes_ups_${vidInfo._id}`);
+      const voteDownsElm = document.getElementById(
+        `votes_downs_${vidInfo._id}`
+      );
+      voteUpsElm.style.opacity = "0.5";
+      voteDownsElm.style.opacity = "0.5";
+      return;
+    }
     elm.addEventListener("click", function (e) {
       e.preventDefault();
       const [votes, vote_type, id] = e.target.getAttribute("id").split("_");
@@ -182,6 +298,26 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
         });
     });
   });
+}
+
+function updateStatus(videoID, status, videoResValue = "") {
+  fetch(`${server}/video-request`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: videoID,
+      status: status,
+      resVideo: videoResValue,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      document.getElementById(
+        `vid_req_status_${videoID}`
+      ).innerText = data.status.toUpperCase();
+
+      console.log(data);
+    });
 }
 
 function style_votes(data, id, vote_type) {

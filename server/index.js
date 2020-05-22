@@ -59,12 +59,14 @@ app.get("/users", async (req, res, next) => {
   next();
 });
 
-app.post("/users/login", upload.none(), async (req, res, next) => {
+app.post("/users/login", async (req, res, next) => {
+  console.log(req.body);
   const response = await UserData.createUser(req.body);
   res.send({
     id: response._id,
     author_name: response.author_name,
     author_email: response.author_email,
+    admin: response.admin,
   });
   next();
 });
