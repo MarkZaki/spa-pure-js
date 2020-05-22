@@ -64,6 +64,11 @@ document.addEventListener("DOMContentLoaded", function () {
     elm.addEventListener("click", function (e) {
       e.preventDefault();
       state.sortBy = this.querySelector("input").value;
+      console.log(
+        "you triggered the func",
+        this.querySelector("input").value,
+        state.sortBy
+      );
       loadAllVidReqs(state.sortBy, state.searchTerm);
       this.classList.add("active");
       if (state.sortBy === "topVotedFirst") {
@@ -123,8 +128,8 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
   const vidTemplate = `
     <div class="card mb-3" id="id_${vidInfo._id}_id">
     ${
-      state.isAdmin &&
-      `<div class="card-header d-flex justify-content-between">
+      state.isAdmin
+        ? `<div class="card-header d-flex justify-content-between">
     <select id="admin_change_status_${vidInfo._id}" value=${vidInfo.status}>
       <option value="new">new</option>
       <option value="planned">planned</option>
@@ -138,6 +143,7 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
     </div>
     <button class="btn btn-danger" id="admin_delete_video_req_${vidInfo._id}">Delete</button>
 </div>`
+        : ""
     }
       <div class="card-body d-flex justify-content-between flex-row">
         <div class="d-flex flex-column">
@@ -150,6 +156,13 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
             }
           </p>
         </div>
+        ${
+          vidInfo.status === "done"
+            ? `<div>
+        <iframe src="https://youtube.com/embed/${vidInfo.video_ref.link}" frameborder="0" width="240" allowfullscreen></iframe>
+      </div>`
+            : ``
+        }
         <div class="d-flex flex-column text-center">
           <a id="votes_ups_${vidInfo._id}" class="btn btn-link">🔺</a>
           <h3 id="score_vote_${vidInfo._id}">${
@@ -159,8 +172,14 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
         </div>
       </div>
       <div class="card-footer d-flex flex-row justify-content-between">
-        <div>
-          <span class="text-info" id="vid_req_status_${
+        <div class="${
+          vidInfo.status === "done"
+            ? "text-success"
+            : vidInfo.status === "planned"
+            ? "text-primary"
+            : ""
+        }">
+          <span id="vid_req_status_${
             vidInfo._id
           }">${vidInfo.status.toUpperCase()}</span>
           &bullet; added by <strong>${vidInfo.author_name}</strong> on
@@ -276,6 +295,8 @@ function getSingleVidReq(vidInfo, isPrepend = false) {
       );
       voteUpsElm.style.opacity = "0.5";
       voteDownsElm.style.opacity = "0.5";
+      voteUpsElm.style.cursor = "not-allowed";
+      voteDownsElm.style.cursor = "not-allowed";
       return;
     }
     elm.addEventListener("click", function (e) {
@@ -346,6 +367,7 @@ function style_votes(data, id, vote_type) {
 
 function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
   const listOfVidElm = document.getElementById("listOfRequests");
+  console.log("about to fetch", sortBy);
   return fetch(
     `${server}/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`
   )
@@ -354,6 +376,7 @@ function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
       listOfVidElm.innerHTML = "";
       data.forEach((vidInfo) => {
         getSingleVidReq(vidInfo);
+        console.log("supposed to be rendered");
       });
     });
 }
